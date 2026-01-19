@@ -1,17 +1,112 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Electricity Usage</title>
+  <meta charset="UTF-8" />
+  <title>Electricity Usage Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-    <h1>Initialize</h1>
-    <h1>BAD EDIT</h1>
-    <h1>BAD EDIT</h1>
-    <h1>BAD EDIT</h1>
-    <h1>BAD EDIT</h1>
-    <h1>BAD EDIT</h1>
-    <h1>BAD EDIT</h1>
+  <header>
+    <h1>⚡ Electricity Usage Dashboard</h1>
+    <select id="provinceSelect">
+      <option value="">Select Province</option>
+    </select>
+  </header>
+
+  <main>
+    <div class="cards">
+      <div class="card">
+        <h3>Total Usage (kWh)</h3>
+        <p id="totalUsage">-</p>
+      </div>
+      <div class="card">
+        <h3>Total Users</h3>
+        <p id="totalUsers">-</p>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Category</th>
+          <th>Usage (kWh)</th>
+          <th>Users</th>
+        </tr>
+      </thead>
+      <tbody id="dataTable"></tbody>
+    </table>
+  </main>
+
+  <script>
+    let usageData = [];
+    let userData = [];
+
+    const categories = [
+      "residential",
+      "small_business",
+      "medium_business",
+      "large_business",
+      "specialized_business",
+      "public_electricity",
+      "temporary_electricity",
+      "ev_charging"
+    ];
+
+    Promise.all([
+      fetch("electricity_usages_en.json").then(r => r.json()),
+      fetch("electricity_users_en.json").then(r => r.json())
+    ]).then(([usageJson, userJson]) => {
+      usageData = usageJson.Sheet1;
+      userData = userJson;
+      populateProvinces();
+    });
+
+    function populateProvinces() {
+      const select = document.getElementById("provinceSelect");
+      usageData.forEach(p => {
+        const option = document.createElement("option");
+        option.value = p.province_code;
+        option.textContent = p.province_name;
+        select.appendChild(option);
+      });
+
+      select.addEventListener("change", e => {
+        renderDashboard(e.target.value);
+      });
+    }
+
+    function renderDashboard(code) {
+      const usage = usageData.find(p => p.province_code == code);
+      const users = userData.find(p => p.province_code == code);
+      if (!usage || !users) return;
+
+      let totalUsage = 0;
+      let totalUsers = 0;
+      const tbody = document.getElementById("dataTable");
+      tbody.innerHTML = "";
+
+      categories.forEach(cat => {
+        const u = usage[cat + "_kwh"] || 0;
+        const c = users[cat + "_count"] || 0;
+        totalUsage += u;
+        totalUsers += c;
+
+        const row = `
+          <tr>
+            <td>${cat.replaceAll("_", " ")}</td>
+            <td>${u.toLocaleString()}</td>
+            <td>${c.toLocaleString()}</td>
+          </tr>
+        `;
+        tbody.insertAdjacentHTML("beforeend", row);
+      });
+
+      document.getElementById("totalUsage").textContent =
+        totalUsage.toLocaleString();
+      document.getElementById("totalUsers").textContent =
+        totalUsers.toLocaleString();
+    }
+  </script>
 </body>
 </html>

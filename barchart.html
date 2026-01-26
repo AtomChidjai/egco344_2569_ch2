@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Electricity Usage Bar Chart</title>
+  <title>Electricity Charts</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="styles.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -31,7 +31,7 @@
   <header>
     <div style="display: flex; align-items: center;">
         <a href="index.html" class="back-btn">⬅ Back</a>
-        <h1>📊 Usage Chart</h1>
+        <h1>📊 Province Charts</h1>
     </div>
     <select id="provinceSelect">
       <option value="">Select Province</option>
@@ -42,11 +42,19 @@
     <div class="chart-container">
       <canvas id="usageChart"></canvas>
     </div>
+
+    <div class="chart-container">
+      <canvas id="userChart"></canvas>
+    </div>
   </main>
 
   <script>
     let usageData = [];
-    let myChart = null;
+    let userData = [];
+    
+    // Store chart instances so we can destroy them before redrawing
+    let usageChartInstance = null;
+    let userChartInstance = null;
 
     const categories = [
       "residential",
@@ -63,19 +71,23 @@
     const urlParams = new URLSearchParams(window.location.search);
     const initialCode = urlParams.get('code');
 
-    fetch("electricity_usages_en.json")
-      .then(r => r.json())
-      .then(json => {
-        usageData = json.Sheet1;
+    // 1. Fetch BOTH JSON files
+    Promise.all([
+      fetch("electricity_usages_en.json").then(r => r.json()),
+      fetch("electricity_users_en.json").then(r => r.json())
+    ]).then(([usageJson, userJson]) => {
+        usageData = usageJson.Sheet1;
+        userData = userJson;
+        
         populateProvinces();
         
         // If we came from index.html with a code, load it immediately
         if (initialCode) {
             const select = document.getElementById("provinceSelect");
             select.value = initialCode;
-            renderChart(initialCode);
+            renderCharts(initialCode);
         }
-      });
+    });
 
     function populateProvinces() {
       const select = document.getElementById("provinceSelect");
@@ -87,33 +99,36 @@
       });
 
       select.addEventListener("change", e => {
-        renderChart(e.target.value);
+        renderCharts(e.target.value);
       });
     }
 
-    function renderChart(code) {
+    function renderCharts(code) {
       const usage = usageData.find(p => p.province_code == code);
-      if (!usage) return;
+      const users = userData.find(p => p.province_code == code);
+      
+      if (!usage || !users) return;
 
-      const dataValues = categories.map(cat => usage[cat + "_kwh"] || 0);
+      // --- Prepare Data ---
       const labels = categories.map(cat => 
         cat.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())
       );
 
-      const ctx = document.getElementById('usageChart').getContext('2d');
+      const usageValues = categories.map(cat => usage[cat + "_kwh"] || 0);
+      const userValues = categories.map(cat => users[cat + "_count"] || 0);
 
-      if (myChart) {
-        myChart.destroy();
-      }
+      // --- Render Chart 1: Usage ---
+      const ctxUsage = document.getElementById('usageChart').getContext('2d');
+      if (usageChartInstance) usageChartInstance.destroy();
 
-      myChart = new Chart(ctx, {
+      usageChartInstance = new Chart(ctxUsage, {
         type: 'bar',
         data: {
           labels: labels,
           datasets: [{
             label: 'Electricity Usage (kWh)',
-            data: dataValues,
-            backgroundColor: 'rgba(54, 162, 235, 0.6)',
+            data: usageValues,
+            backgroundColor: 'rgba(54, 162, 235, 0.6)', // Blue
             borderColor: 'rgba(54, 162, 235, 1)',
             borderWidth: 1
           }]
@@ -123,7 +138,7 @@
           plugins: {
             title: {
               display: true,
-              text: `Usage Breakdown for ${usage.province_name}`,
+              text: `Electricity Usage: ${usage.province_name}`,
               font: { size: 18 }
             },
             legend: { display: false }
@@ -131,9 +146,42 @@
           scales: {
             y: {
               beginAtZero: true,
-              ticks: {
-                 callback: function(value) { return value.toLocaleString(); }
-              }
+              ticks: { callback: val => val.toLocaleString() }
+            }
+          }
+        }
+      });
+
+      // --- Render Chart 2: Users ---
+      const ctxUser = document.getElementById('userChart').getContext('2d');
+      if (userChartInstance) userChartInstance.destroy();
+
+      userChartInstance = new Chart(ctxUser, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Number of Users',
+            data: userValues,
+            backgroundColor: 'rgba(75, 192, 192, 0.6)', // Green
+            borderColor: 'rgba(75, 192, 192, 1)',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            title: {
+              display: true,
+              text: `Total Users: ${usage.province_name}`,
+              font: { size: 18 }
+            },
+            legend: { display: false }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { callback: val => val.toLocaleString() }
             }
           }
         }

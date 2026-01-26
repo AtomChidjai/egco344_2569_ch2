@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Electricity Usage Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
+  <style>
+    body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
+    #vis { margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h1>Electricity Dashboard</h1>
+  <div id="vis"></div>
+
+  <script type="text/javascript">
+    var spec = {
+      "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+      "hconcat": [
+        {
+          "title": "Electricity Usages (kWh)",
+          "width": 300,
+          "height": 300,
+          "data": {
+            "url": "electricity_usages_en.json",
+            "format": {"type": "json", "property": "Sheet1"}
+          },
+          "transform": [
+            {
+              "fold": [
+                "residential_kwh", "small_business_kwh", "medium_business_kwh", 
+                "large_business_kwh", "specialized_business_kwh", "backup_power_kwh", 
+                "interruptible_rate_kwh", "public_electricity_kwh", 
+                "government_state_enterprise_kwh", "water_pumping_kwh", 
+                "temporary_electricity_kwh", "ev_charging_kwh"
+              ],
+              "as": ["category_raw", "kwh"]
+            },
+            {
+              "calculate": "replace(replace(datum.category_raw, '_kwh', ''), '_', ' ')",
+              "as": "category"
+            },
+            {"filter": {"selection": "SelectYear"}},
+            {"filter": {"selection": "SelectProvince"}}
+          ],
+          "mark": {"type": "arc", "outerRadius": 120},
+          "encoding": {
+            "theta": {"field": "kwh", "type": "quantitative", "stack": true},
+            "color": {"field": "category", "type": "nominal", "legend": {"title": "Category"}},
+            "order": {"field": "kwh", "sort": "descending"},
+            "tooltip": [
+              {"field": "category", "type": "nominal"},
+              {"field": "kwh", "type": "quantitative", "format": ","},
+              {"field": "year", "type": "ordinal"},
+              {"field": "province_name", "type": "nominal"}
+            ]
+          },
+          "selection": {
+            "SelectYear": {
+              "type": "point",
+              "fields": ["year"],
+              "bind": {
+                "input": "select",
+                "options": [2564, 2565, 2566],
+                "name": "Year "
+              },
+              "value": 2566
+            },
+            "SelectProvince": {
+              "type": "point",
+              "fields": ["province_name"],
+              "bind": {
+                "input": "select",
+                "name": "Province ",
+                "options": [
+                  "Amnat Charoen", "Ang Thong", "Bangkok", "Bueng Kan", "Buriram", 
+                  "Chachoengsao", "Chainat", "Chaiyaphum", "Chanthaburi", "Chiang Mai", 
+                  "Chiang Rai", "Chonburi", "Chumphon", "Kalasin", "Kamphaeng Phet", 
+                  "Kanchanaburi", "Khon Kaen", "Krabi", "Lampang", "Lamphun", "Loei", 
+                  "Lopburi", "Mae Hong Son", "Maha Sarakham", "Mukdahan", "Nakhon Nayok", 
+                  "Nakhon Pathom", "Nakhon Phanom", "Nakhon Ratchasima", "Nakhon Sawan", 
+                  "Nakhon Si Thammarat", "Nan", "Narathiwat", "Nong Bua Lamphu", 
+                  "Nong Khai", "Nonthaburi", "Pathum Thani", "Pattani", "Phang Nga", 
+                  "Phatthalung", "Phayao", "Phetchabun", "Phetchaburi", "Phichit", 
+                  "Phitsanulok", "Phra Nakhon Si Ayutthaya", "Phrae", "Phuket", 
+                  "Prachinburi", "Prachuap Khiri Khan", "Ranong", "Ratchaburi", "Rayong", 
+                  "Roi Et", "Sa Kaeo", "Sakon Nakhon", "Samut Prakan", "Samut Sakhon", 
+                  "Samut Songkhram", "Saraburi", "Satun", "Si Sa Ket", "Sing Buri", 
+                  "Songkhla", "Sukhothai", "Suphan Buri", "Surat Thani", "Surin", "Tak", 
+                  "Trang", "Trat", "Ubon Ratchathani", "Udon Thani", "Uthai Thani", 
+                  "Uttaradit", "Yala", "Yasothon"
+                ]
+              },
+              "value": "Bangkok"
+            }
+          }
+        },
+        {
+          "title": "Electricity Users (Count)",
+          "width": 300,
+          "height": 300,
+          "data": {
+            "url": "electricity_users_en.json",
+            "format": {"type": "json", "property": "Sheet1"}
+          },
+          "transform": [
+            {
+              "fold": [
+                "residential_count", "small_business_count", "medium_business_count", 
+                "large_business_count", "specialized_business_count", "backup_power_count", 
+                "interruptible_rate_count", "public_electricity_count", 
+                "government_state_enterprise_count", "water_pumping_count", 
+                "temporary_electricity_count", "ev_charging_count"
+              ],
+              "as": ["category_raw", "count"]
+            },
+            {
+              "calculate": "replace(replace(datum.category_raw, '_count', ''), '_', ' ')",
+              "as": "category"
+            },
+            {"filter": {"selection": "SelectYear"}},
+            {"filter": {"selection": "SelectProvince"}}
+          ],
+          "mark": {"type": "arc", "outerRadius": 120},
+          "encoding": {
+            "theta": {"field": "count", "type": "quantitative", "stack": true},
+            "color": {"field": "category", "type": "nominal"},
+            "order": {"field": "count", "sort": "descending"},
+            "tooltip": [
+              {"field": "category", "type": "nominal"},
+              {"field": "count", "type": "quantitative", "format": ","},
+              {"field": "year", "type": "ordinal"},
+              {"field": "province_name", "type": "nominal"}
+            ]
+          }
+        }
+      ],
+      "resolve": {"scale": {"color": "shared"}}
+    };
+
+    vegaEmbed('#vis', spec).then(function(result) {
+      // Access the Vega view instance as result.view
+    }).catch(console.error);
+  </script>
+</body>
+</html>

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Electricity Usage Bar Chart</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .chart-container {
+      width: 90%;
+      max-width: 900px;
+      margin: 2rem auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .back-btn {
+        color: white; 
+        text-decoration: none; 
+        font-weight: bold;
+        margin-right: 15px;
+        border: 1px solid white;
+        padding: 5px 10px;
+        border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div style="display: flex; align-items: center;">
+        <a href="index.html" class="back-btn">⬅ Back</a>
+        <h1>📊 Usage Chart</h1>
+    </div>
+    <select id="provinceSelect">
+      <option value="">Select Province</option>
+    </select>
+  </header>
+
+  <main>
+    <div class="chart-container">
+      <canvas id="usageChart"></canvas>
+    </div>
+  </main>
+
+  <script>
+    let usageData = [];
+    let myChart = null;
+
+    const categories = [
+      "residential",
+      "small_business",
+      "medium_business",
+      "large_business",
+      "specialized_business",
+      "public_electricity",
+      "temporary_electricity",
+      "ev_charging"
+    ];
+
+    // Get URL Parameter (e.g. ?code=10)
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialCode = urlParams.get('code');
+
+    fetch("electricity_usages_en.json")
+      .then(r => r.json())
+      .then(json => {
+        usageData = json.Sheet1;
+        populateProvinces();
+        
+        // If we came from index.html with a code, load it immediately
+        if (initialCode) {
+            const select = document.getElementById("provinceSelect");
+            select.value = initialCode;
+            renderChart(initialCode);
+        }
+      });
+
+    function populateProvinces() {
+      const select = document.getElementById("provinceSelect");
+      usageData.forEach(p => {
+        const option = document.createElement("option");
+        option.value = p.province_code;
+        option.textContent = p.province_name;
+        select.appendChild(option);
+      });
+
+      select.addEventListener("change", e => {
+        renderChart(e.target.value);
+      });
+    }
+
+    function renderChart(code) {
+      const usage = usageData.find(p => p.province_code == code);
+      if (!usage) return;
+
+      const dataValues = categories.map(cat => usage[cat + "_kwh"] || 0);
+      const labels = categories.map(cat => 
+        cat.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())
+      );
+
+      const ctx = document.getElementById('usageChart').getContext('2d');
+
+      if (myChart) {
+        myChart.destroy();
+      }
+
+      myChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Electricity Usage (kWh)',
+            data: dataValues,
+            backgroundColor: 'rgba(54, 162, 235, 0.6)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            title: {
+              display: true,
+              text: `Usage Breakdown for ${usage.province_name}`,
+              font: { size: 18 }
+            },
+            legend: { display: false }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                 callback: function(value) { return value.toLocaleString(); }
+              }
+            }
+          }
+        }
+      });
+    }
+  </script>
+</body>
+</html>

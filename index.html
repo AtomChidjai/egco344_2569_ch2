@@ -5,6 +5,23 @@
   <title>Electricity Usage Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* Style for the button */
+    .btn-chart {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 10px 20px;
+      background-color: #007bff;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+      font-weight: bold;
+    }
+    .btn-chart.disabled {
+      background-color: #ccc;
+      pointer-events: none;
+    }
+  </style>
 </head>
 <body>
   <header>
@@ -15,6 +32,10 @@
   </header>
 
   <main>
+    <div style="text-align: right; margin-bottom: 20px;">
+      <a id="chartLink" href="barchart.html" class="btn-chart disabled">View Bar Chart ➡</a>
+    </div>
+
     <div class="cards">
       <div class="card">
         <h3>Total Usage (kWh)</h3>
@@ -79,7 +100,16 @@
     function renderDashboard(code) {
       const usage = usageData.find(p => p.province_code == code);
       const users = userData.find(p => p.province_code == code);
-      if (!usage || !users) return;
+      const chartLink = document.getElementById("chartLink");
+
+      if (!usage || !users) {
+        chartLink.classList.add("disabled");
+        return;
+      }
+
+      // Update the button to link to the specific province
+      chartLink.href = `barchart.html?code=${code}`;
+      chartLink.classList.remove("disabled");
 
       let totalUsage = 0;
       let totalUsers = 0;
@@ -102,10 +132,8 @@
         tbody.insertAdjacentHTML("beforeend", row);
       });
 
-      document.getElementById("totalUsage").textContent =
-        totalUsage.toLocaleString();
-      document.getElementById("totalUsers").textContent =
-        totalUsers.toLocaleString();
+      document.getElementById("totalUsage").textContent = totalUsage.toLocaleString();
+      document.getElementById("totalUsers").textContent = totalUsers.toLocaleString();
     }
   </script>
 </body>

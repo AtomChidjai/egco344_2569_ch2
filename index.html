@@ -34,6 +34,7 @@
   <main>
     <div style="text-align: right; margin-bottom: 20px;">
       <a id="chartLink" href="barchart.html" class="btn-chart disabled">View Bar Chart ➡</a>
+      <a id="pieChartLink" href="piechart.html" class="btn-chart disabled">View Pie Chart ➡</a>
     </div>
 
     <div class="cards">
@@ -101,15 +102,19 @@
       const usage = usageData.find(p => p.province_code == code);
       const users = userData.find(p => p.province_code == code);
       const chartLink = document.getElementById("chartLink");
+      const pieChartLink = document.getElementById("pieChartLink");
 
       if (!usage || !users) {
         chartLink.classList.add("disabled");
+        pieChartLink.classList.add("disabled");
         return;
       }
 
       // Update the button to link to the specific province
       chartLink.href = `barchart.html?code=${code}`;
       chartLink.classList.remove("disabled");
+      pieChartLink.href = `piechart.html?code=${code}`;
+      pieChartLink.classList.remove("disabled");
 
       let totalUsage = 0;
       let totalUsers = 0;

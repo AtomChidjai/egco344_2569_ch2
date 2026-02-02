@@ -1,1 +1,1 @@
-this is readme for Phase 5: The Merge Conflict !
+# The Team Note - v1.0
